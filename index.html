@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Security: Bloqueamos peticiones externas para garantizar "Offline" -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;">
+    <title>Siurtec Encrypt 2.0 | Secure Stream</title>
+
+    <style>
+        /* --- DESIGN SYSTEM: MINIMALIST DARK --- */
+        :root {
+            /* Palette: Slate/Zinc based */
+            --bg-body: #09090b;
+            /* Zinc 950 */
+            --bg-card: #18181b;
+            /* Zinc 900 */
+            --bg-input: #27272a;
+            /* Zinc 800 */
+
+            --border-light: #3f3f46;
+            /* Zinc 700 */
+            --border-hover: #52525b;
+            /* Zinc 600 */
+
+            --text-main: #f4f4f5;
+            /* Zinc 100 */
+            --text-muted: #a1a1aa;
+            /* Zinc 400 */
+
+            --brand-primary: #10b981;
+            /* Emerald 500 */
+            --brand-hover: #059669;
+            /* Emerald 600 */
+            --brand-glow: rgba(16, 185, 129, 0.2);
+
+            --danger: #ef4444;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        /* --- BASE --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background-image: radial-gradient(circle at 50% 10%, #1e293b 0%, var(--bg-body) 60%);
+        }
+
+        /* --- COMPONENTS --- */
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            padding: 1rem;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .glass-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius);
+            padding: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+            margin-bottom: 0.25rem;
+        }
+
+        .subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+
+        /* Drop Zone */
+        .drop-zone {
+            border: 2px dashed var(--border-light);
+            border-radius: var(--radius);
+            padding: 3rem 1.5rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .drop-zone:hover,
+        .drop-zone.drag-active {
+            border-color: var(--brand-primary);
+            background: var(--brand-glow);
+            transform: scale(1.005);
+        }
+
+        .icon-upload {
+            width: 48px;
+            height: 48px;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            transition: color 0.2s;
+        }
+
+        .drop-zone:hover .icon-upload {
+            color: var(--brand-primary);
+        }
+
+        .drop-text h3 {
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+            font-weight: 500;
+        }
+
+        .drop-text p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* File Info */
+        .file-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-input);
+            padding: 0.75rem 1rem;
+            border-radius: calc(var(--radius) - 4px);
+            border: 1px solid var(--border-light);
+        }
+
+        .file-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+
+        .file-size {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+
+        .btn-clear {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            transition: color 0.2s;
+        }
+
+        .btn-clear:hover {
+            color: var(--danger);
+        }
+
+        /* Password Input */
+        .input-group {
+            position: relative;
+        }
+
+        .input-main {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-light);
+            border-radius: calc(var(--radius) - 4px);
+            padding: 0.8rem 1rem;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-main:focus {
+            border-color: var(--brand-primary);
+        }
+
+        /* Action Button */
+        .btn-primary {
+            width: 100%;
+            background: var(--brand-primary);
+            color: #fff;
+            border: none;
+            padding: 0.9rem;
+            border-radius: calc(var(--radius) - 4px);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary:hover {
+            background: var(--brand-hover);
+            box-shadow: 0 4px 12px var(--brand-glow);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(1);
+        }
+
+        /* Progress */
+        .progress-container {
+            margin-top: 0.5rem;
+        }
+
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.4rem;
+            font-size: 0.8rem;
+        }
+
+        .progress-track {
+            height: 6px;
+            background: var(--bg-input);
+            border-radius: 99px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--brand-primary);
+            border-radius: 99px;
+            transition: width 0.1s linear;
+        }
+
+        /* Utils */
+        .hidden {
+            display: none !important;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .text-brand {
+            color: var(--brand-primary);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <div class="glass-card">
+            <header>
+                <h1>Siurtec Encrypt <span class="text-brand">2.0</span></h1>
+                <p class="subtitle">ZERO-KNOWLEDGE • OFFLINE • STREAM</p>
+            </header>
+
+            <!-- Mode Selector -->
+            <div
+                style="display: flex; gap: 0.5rem; background: var(--bg-body); padding: 4px; border-radius: var(--radius);">
+                <button onclick="setMode('encrypt')" id="btn-encrypt" class="btn-primary"
+                    style="flex:1; font-size:0.8rem; padding:0.5rem;">Cifrar</button>
+                <button onclick="setMode('decrypt')" id="btn-decrypt" class="btn-primary"
+                    style="flex:1; background:transparent; color: var(--text-muted); font-size:0.8rem; padding:0.5rem;">Descifrar</button>
+            </div>
+
+            <!-- Drop Zone -->
+            <div id="drop-zone" class="drop-zone">
+                <input type="file" id="file-input" style="display: none;">
+                <div class="drop-content">
+                    <svg class="icon-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <div class="drop-text">
+                        <h3>Arrastra tu archivo aquí</h3>
+                        <p>o haz clic para explorar</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Info (Hidden by default) -->
+            <div id="file-info" class="file-info hidden">
+                <div style="display:flex; align-items:center; gap:0.75rem; overflow:hidden;">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+                    </svg>
+                    <div>
+                        <div id="filename" class="file-name">archivo.zip</div>
+                        <div id="filesize" class="file-size">0 MB</div>
+                    </div>
+                </div>
+                <button onclick="resetFile()" class="btn-clear">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Inputs -->
+            <div class="input-group">
+                <input type="password" id="password" class="input-main" placeholder="Contraseña Maestra">
+            </div>
+
+            <!-- Action -->
+            <button id="action-btn" onclick="startProcessing()" class="btn-primary">
+                PROCESAR ARCHIVO
+            </button>
+
+            <!-- Progress -->
+            <div id="progress-area" class="progress-container hidden">
+                <div class="progress-labels">
+                    <span id="status-text" class="text-brand">Iniciando...</span>
+                    <span id="percent-text">0%</span>
+                </div>
+                <div class="progress-track">
+                    <div id="progress-bar" class="progress-fill"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WORKER SCRIPT: Embedded as Blob for single-file portability -->
+    <script id="worker-src" type="javascript/worker">
+        // --- WORKER LOGIC ---
+        const CHUNK_SIZE = 1024 * 1024 * 8; 
+        const MAGIC = 'SIUR';
+        
+        self.onmessage = async (e) => {
+            const { type, fileStream, writableStream, password, mode, fileSize } = e.data;
+            try {
+                if (type === 'start') {
+                    if (mode === 'encrypt') await runEncryption(fileStream, writableStream, password, fileSize);
+                    else await runDecryption(fileStream, writableStream, password, fileSize);
+                    
+                    self.postMessage({ type: 'done' });
+                }
+            } catch (err) {
+                self.postMessage({ type: 'error', msg: err.message });
+            }
+        };
+
+        // --- CRYPTO UTILS ---
+        async function getKey(pwd, salt) {
+            const enc = new TextEncoder();
+            const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(pwd), {name: "PBKDF2"}, false, ["deriveKey"]);
+            return crypto.subtle.deriveKey(
+                { name: "PBKDF2", salt: salt, iterations: 600000, hash: "SHA-256" },
+                keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
+            );
+        }
+
+        // --- BUFFERED READER ---
+        // Fixes data loss issue where readExact dropped extra bytes from stream chunks
+        class ChunkedReader {
+            constructor(reader) {
+                this.reader = reader;
+                this.chunk = new Uint8Array(0);
+                this.done = false;
+            }
+
+            async readExact(len) {
+                let result = new Uint8Array(len);
+                let offset = 0;
+
+                while (offset < len) {
+                    if (this.chunk.length === 0) {
+                        if (this.done) {
+                            if (offset === 0) return { done: true };
+                            throw new Error("Stream truncado inesperadamente");
+                        }
+                        const { value, done } = await this.reader.read();
+                        if (done) {
+                            this.done = true;
+                            continue; // Loop again to hit the done check above
+                        }
+                        this.chunk = value;
+                    }
+
+                    const needed = len - offset;
+                    const take = Math.min(needed, this.chunk.length);
+
+                    result.set(this.chunk.slice(0, take), offset);
+                    offset += take;
+
+                    if (take === this.chunk.length) {
+                        this.chunk = new Uint8Array(0);
+                    } else {
+                        this.chunk = this.chunk.slice(take);
+                    }
+                }
+                return { value: result, done: false };
+            }
+        }
+
+        // --- ENCRYPTION FLOW ---
+        async function runEncryption(readable, writable, pwd, totalSize) {
+            const salt = crypto.getRandomValues(new Uint8Array(32));
+            const key = await getKey(pwd, salt);
+            const writer = writable.getWriter();
+
+            // Header: Magic(4) + Ver(1) + Salt(32)
+            await writer.write(new TextEncoder().encode(MAGIC));
+            await writer.write(new Uint8Array([0x01])); // Version 1 (Lite)
+            await writer.write(salt);
+
+            // Stream Pipeline
+            const reader = readable.getReader();
+            let processed = 0;
+            
+            while(true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+
+                const iv = crypto.getRandomValues(new Uint8Array(12));
+                const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, value);
+
+                // Chunk Format: Len(4) + IV(12) + Data(N)
+                await writer.write(new Uint8Array(new Uint32Array([encrypted.byteLength]).buffer));
+                await writer.write(iv);
+                await writer.write(new Uint8Array(encrypted));
+
+                processed += value.byteLength;
+                reportProgress(processed, totalSize, "Cifrando");
+            }
+            // EOF Marker
+            await writer.write(new Uint8Array(new Uint32Array([0]).buffer));
+            await writer.close();
+        }
+
+        // --- DECRYPTION FLOW ---
+        async function runDecryption(readable, writable, pwd, totalSize) {
+            const reader = new ChunkedReader(readable.getReader()); // Use Wrapper
+            const writer = writable.getWriter();
+
+            // Read Header
+            await reader.readExact(5); // Skip Magic + Ver
+            const { value: salt } = await reader.readExact(32);
+            
+            const key = await getKey(pwd, salt);
+            let processed = 0;
+
+            while(true) {
+                // Read Chunk Length
+                const { value: lenBuf, done } = await reader.readExact(4);
+                if (done) break;
+                const chunkLen = new Uint32Array(lenBuf.buffer)[0];
+                if (chunkLen === 0) break; // EOF
+
+                const { value: iv } = await reader.readExact(12);
+                const { value: data } = await reader.readExact(chunkLen);
+
+                try {
+                    const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, data);
+                    await writer.write(new Uint8Array(decrypted));
+                } catch(e) { throw new Error("Contraseña incorrecta o archivo dañado"); }
+
+                processed += chunkLen;
+                reportProgress(processed, totalSize, "Descifrando");
+            }
+            await writer.close();
+        }
+
+        // Helper
+        function reportProgress(curr, total, action) {
+            const p = Math.min(99, Math.round((curr / total) * 100));
+            self.postMessage({ type: 'progress', val: p, status: action });
+        }
+    </script>
+
+    <!-- UI & MAIN LOGIC -->
+    <script>
+        // State
+        let currentMode = 'encrypt';
+        let currentFile = null;
+        let worker = null;
+
+        // DOM
+        const els = {
+            dropZone: document.getElementById('drop-zone'),
+            fileInput: document.getElementById('file-input'),
+            fileInfo: document.getElementById('file-info'),
+            fileName: document.getElementById('filename'),
+            fileSize: document.getElementById('filesize'),
+            password: document.getElementById('password'),
+            btn: document.getElementById('action-btn'),
+            progressArea: document.getElementById('progress-area'),
+            bar: document.getElementById('progress-bar'),
+            percent: document.getElementById('percent-text'),
+            status: document.getElementById('status-text'),
+            btnEnc: document.getElementById('btn-encrypt'),
+            btnDec: document.getElementById('btn-decrypt')
+        };
+
+        // SETUP WORKER
+        function initWorker() {
+            const blob = new Blob([document.getElementById('worker-src').textContent], { type: 'text/javascript' });
+            worker = new Worker(URL.createObjectURL(blob));
+            worker.onmessage = (e) => {
+                const { type, val, status, msg, done } = e.data;
+                if (type === 'progress') {
+                    els.bar.style.width = val + '%';
+                    els.percent.textContent = val + '%';
+                    els.status.textContent = status + '...';
+                } else if (type === 'done') {
+                    els.bar.style.width = '100%';
+                    els.percent.textContent = '100%';
+                    els.status.textContent = '¡Completado!';
+                    els.btn.disabled = false;
+                    els.btn.textContent = "PROCESAR OTRO";
+                    // Only in RAM mode we'd handle download here, but we use Streams so it's auto-saved
+                } else if (type === 'error') {
+                    alert('Error: ' + msg);
+                    els.btn.disabled = false;
+                    els.progressArea.classList.add('hidden');
+                }
+            };
+        }
+
+        // DRAG & DROP
+        els.dropZone.onclick = () => els.fileInput.click();
+        els.fileInput.onchange = (e) => setFile(e.target.files[0]);
+
+        els.dropZone.ondragover = (e) => { e.preventDefault(); els.dropZone.classList.add('drag-active'); };
+        els.dropZone.ondragleave = () => els.dropZone.classList.remove('drag-active');
+        els.dropZone.ondrop = (e) => {
+            e.preventDefault();
+            els.dropZone.classList.remove('drag-active');
+            setFile(e.dataTransfer.files[0]);
+        };
+
+        function setFile(f) {
+            if (!f) return;
+            currentFile = f;
+            els.dropZone.classList.add('hidden');
+            els.fileInfo.classList.remove('hidden');
+            els.fileName.textContent = f.name;
+            els.fileSize.textContent = (f.size / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        function resetFile() {
+            currentFile = null;
+            els.fileInput.value = '';
+            els.dropZone.classList.remove('hidden');
+            els.fileInfo.classList.add('hidden');
+            els.progressArea.classList.add('hidden');
+            els.btn.disabled = false;
+            els.btn.textContent = "PROCESAR ARCHIVO";
+        }
+
+        // UI MODES
+        window.setMode = (m) => {
+            currentMode = m;
+            els.btnEnc.style.background = m === 'encrypt' ? 'var(--brand-primary)' : 'transparent';
+            els.btnEnc.style.color = m === 'encrypt' ? '#fff' : 'var(--text-muted)';
+
+            els.btnDec.style.background = m === 'decrypt' ? 'var(--brand-primary)' : 'transparent';
+            els.btnDec.style.color = m === 'decrypt' ? '#fff' : 'var(--text-muted)';
+        };
+
+        // PROCESSING LIFT-OFF
+        window.startProcessing = async () => {
+            if (!currentFile || !els.password.value) return alert('Selecciona archivo y contraseña');
+            if (!initWorker) initWorker();
+            if (!worker) initWorker();
+
+            els.btn.disabled = true;
+            els.btn.textContent = "Procesando...";
+            els.progressArea.classList.remove('hidden');
+
+            try {
+                // 1. INPUT STREAM BRIDGE
+                const inputTS = new TransformStream();
+                currentFile.stream().pipeTo(inputTS.writable);
+
+                // 2. OUTPUT STREAM BRIDGE (To Save File)
+                let writable;
+                if ('showSaveFilePicker' in window) {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: currentMode === 'encrypt' ? currentFile.name + '.senc' : 'descifrado_' + currentFile.name
+                    });
+                    writable = await handle.createWritable();
+                } else {
+                    // Fallback for browsers without File System Access (Not implemented fully here to save space)
+                    alert("Tu navegador no soporta guardado directo. Usa Chrome/Edge.");
+                    resetFile();
+                    return;
+                }
+
+                const outputTS = new TransformStream();
+                outputTS.readable.pipeTo(writable);
+
+                // 3. SEND TO WORKER
+                worker.postMessage({
+                    type: 'start',
+                    fileStream: inputTS.readable,
+                    writableStream: outputTS.writable,
+                    password: els.password.value,
+                    mode: currentMode,
+                    fileSize: currentFile.size
+                }, [inputTS.readable, outputTS.writable]);
+
+            } catch (err) {
+                console.error(err);
+                alert("Cancelado o Error de acceso al disco.");
+                els.btn.disabled = false;
+                els.progressArea.classList.add('hidden');
+            }
+        };
+    </script>
+</body>
+
+</html>

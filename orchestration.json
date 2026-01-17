@@ -1,0 +1,14 @@
+{
+    "project": "siurtec-encrypt-2.0",
+    "workflow": "collaborative",
+    "agents": [
+        "Vault",
+        "Streamer",
+        "Architect"
+    ],
+    "rules": {
+        "output_format": "single_file_html",
+        "dependency_policy": "zero_external_links",
+        "communication_protocol": "state_sharing"
+    }
+}
